@@ -57,3 +57,14 @@ def insert_embedding(embeddings_db, content, source, check_existing=True):
         raise HTTPException(
             status_code=response.status_code, detail="Error processing embeddings"
         )
+
+
+def generate_embedding(prompt):
+    response = requests.post(
+        app.config.get("ollama_host") + "/api/embeddings",
+        json={"model": app.config.get("embeddings_model"), "prompt": prompt},
+    )
+    if response.status_code == 200:
+        return response.json()["embedding"]
+    else:
+        raise Exception("Error generating embeddings")

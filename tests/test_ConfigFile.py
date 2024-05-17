@@ -25,10 +25,11 @@ def config_file():
     filename = "./tests/tmp/config.json"
     config_file = ConfigFile(filename)
     yield config_file
-    os.remove(filename)
 
 
 def teardown_module():
+    for file in os.listdir("./tests/tmp"):
+        os.remove(f"./tests/tmp/{file}")
     os.rmdir("./tests/tmp")
 
 

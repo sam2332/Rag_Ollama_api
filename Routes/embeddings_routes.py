@@ -1,12 +1,16 @@
 from contextlib import closing
 from fastapi import HTTPException
 from Libs.DB import get_db_connection
+import threading as threadding
+from queue import Queue
 from Libs.RequestSchema import (
     ChangeEmbeddingDBFilename,
     EmbeddingRequest,
     IngressEmbeddingsRequest,
+    IngressFastCSVEmbeddingsRequest,
+    EmbeddingUrlRequest,
 )
-from Libsd.Embeddings_helper import insert_embedding, make_embeddings_safe_for_db
+from Libs.Embeddings_helper import insert_embedding, make_embeddings_safe_for_db
 
 
 def register_routes(app):
@@ -35,14 +39,16 @@ def register_routes(app):
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
 
-    def ingress_thread(file):
+    def file_ingress_thread(file, embeddings_db):
         if file.suffix == ".txt":
             with open(file, "r") as f:
                 content = f.read()
                 # chunk content 255 characters
                 for i in range(0, len(content), data.chunk_size):
                     insert_embedding(
-                        content[i : i + 255], file.name + " - chunk " + str(i)
+                        embeddings_db,
+                        content[i : i + 255],
+                        file.name + " - chunk " + str(i),
                     )
         elif file.suffix == ".csv":
             file_data = file.read_text()
@@ -61,7 +67,9 @@ def register_routes(app):
                         content += lines[index + i] + "\n"
                 # add headers at top of content
                 content = " ".join(lines[0:2]) + "\n" + content
-                insert_embedding(content, file.name + " - line " + str(index))
+                insert_embedding(
+                    embeddings_db, content, file.name + " - line " + str(index)
+                )
                 end = time.time()
                 avg_list.append(end - start)
                 avg = sum(avg_list) / len(avg_list)
@@ -77,41 +85,49 @@ def register_routes(app):
         threads = []
         for file in ingress_folder.iterdir():
             if file.is_file():
-                t = threadding.Thread(target=thread, args=(file,)).start()
+                t = threadding.Thread(
+                    target=file_ingress_thread,
+                    args=(
+                        file,
+                        data.embeddings_db,
+                    ),
+                ).start()
                 threads.append(t)
         for t in threads:
             t.join()
         return {"status": "success"}
 
-    import threading as threadding
-    from queue import Queue
-
-    def ingress_thread(queue):
+    def ingress_thread(queue, embeddings_db):
         failout = 5
         while failout > 0:
             while not queue.empty():
                 file, lines = queue.get()
                 content = "\n".join(lines)
                 try:
-                    insert_embedding(content, file)
+                    insert_embedding(embeddings_db, content, file)
                 except Exception as e:
                     print(e)
                     failout -= 1
             failout - 1
 
     @app.post("/api/fast_csv_ingress/")
-    async def fast_csv_ingress():
+    async def fast_csv_ingress(data: IngressFastCSVEmbeddingsRequest):
         queue = Queue()
         for file in Path("ingress").glob("*.csv"):
             lines = file.read_text().split("\n")
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            threadding.Thread(target=ingress_thread, args=(queue,)).start()
-            for index in range(2, len(lines) - 1, 5):
+            for _ in range(data.thread_count):
+                threadding.Thread(
+                    target=ingress_thread,
+                    args=(
+                        queue,
+                        data.embeddings_db,
+                    ),
+                ).start()
+
+            start = 1
+            if data.ignore_first_line:
+                start = 2
+            for index in range(start, len(lines) - 1, data.chunk_size):
                 queue.put(
                     (
                         f"{file.name} - lines {index-2} - {index+2}",
@@ -123,18 +139,27 @@ def register_routes(app):
             time.sleep(1)
         return {"status": "success"}
 
-    def generate_embedding(prompt):
-        response = requests.post(
-            app.config.get("ollama_host") + "/api/embeddings",
-            json={"model": app.config.get("embeddings_model"), "prompt": prompt},
-        )
-        if response.status_code == 200:
-            return response.json()["embedding"]
-        else:
-            raise Exception("Error generating embeddings")
-
     # Endpoint to insert text and embeddings
     @app.post("/api/insert_text_embeddings/")
     async def insert_text_embeddings(data: EmbeddingRequest):
         # Simulating external API call for embeddings
-        return insert_embedding(data.content, data.source, data.check_existing)
+        return insert_embedding(
+            data.embeddings_db, data.content, data.source, data.check_existing
+        )
+
+    @app.post("/api/insert_url_embeddings/")
+    async def insert_url_embeddings(data: EmbeddingUrlRequest):
+        response = requests.get(data.url, timeout=30)
+        if response.status_code == 200:
+            content = response.text
+            for i in range(0, len(content), data.chunk_size):
+                insert_embedding(
+                    data.embeddings_db,
+                    content[i : i + 255],
+                    data.source + " - chunk " + str(i),
+                )
+            return {"status": "success"}
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail="Error fetching URL"
+            )

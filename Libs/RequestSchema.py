@@ -10,6 +10,7 @@ class EmbeddingRequest(BaseModel):
     overlap: int = 50
     chunk_size: int = 255
     check_existing: bool = True
+    embeddings_db: str
 
 
 class ChatRequest(BaseModel):
@@ -53,3 +54,20 @@ class ChatPassthroughRagRequest(BaseModel):
 class IngressEmbeddingsRequest(BaseModel):
     overlap: int = 50
     chunk_size: int = 255
+    embeddings_db: str
+
+
+class IngressFastCSVEmbeddingsRequest(BaseModel):
+    embeddings_db: str
+    lines_chunking_size: int = 5
+    ignore_first_line: bool = True
+    thread_count: int = 10
+
+
+class EmbeddingUrlRequest(BaseModel):
+    url: str
+    source: str
+    check_existing: bool
+    embeddings_db: str
+    chunk_size: int = 255
+    overlap: int = 50
