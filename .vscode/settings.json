@@ -8,10 +8,8 @@
     "python.testing.pytestArgs": [
         "tests",
         "--cov=.",
-        "--cov-report=xml"
-    ],
-    "python.REPL.enableREPLSmartSend": false,
-    
+        "--cov-report=html"
+    ]
 }
 
 
