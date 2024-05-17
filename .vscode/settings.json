@@ -8,7 +8,7 @@
     "python.testing.pytestArgs": [
         "tests",
         "--cov=.",
-        "--cov-report=html"
+        "--cov-report=xml"
     ]
 }
 

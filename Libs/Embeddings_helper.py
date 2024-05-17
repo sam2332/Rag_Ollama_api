@@ -2,7 +2,6 @@ import requests
 from contextlib import closing
 from fastapi import HTTPException
 from Libs.DB import get_db_connection
-from Libs.Utility import make_embeddings_safe_for_db
 
 
 def make_embeddings_safe_for_db(embedding):

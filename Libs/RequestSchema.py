@@ -24,6 +24,10 @@ class RagRequest(BaseModel):
     embeddings_db: str
 
 
+class ChangeEmbeddingDBFilename(BaseModel):
+    name: str
+
+
 class ChangeEmbeddingModel(BaseModel):
     name: str
 
