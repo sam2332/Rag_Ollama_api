@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Swagger UI</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 10px;
+    }
+    .endpoint {
+        background: white;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    form {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin: 10px 0 5px;
+    }
+    textarea, button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box; /* Adjusts padding inside the input */
+    }
+    button {
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+<body>
+<div id="apiContainer"></div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetch('http://0.0.0.0:11435/openapi.json')
+    .then(response => response.json())
+    .then(data => createForms(data))
+    .catch(error => console.error('Error fetching API data:', error));
+
+    function getDefaultValuesFromSchema(schema) {
+        const obj = {};
+        for (const key in schema.properties) {
+            const prop = schema.properties[key];
+            if (prop.type === 'string') {
+                obj[key] = prop.default || 'string';
+            } else if (prop.type === 'integer') {
+                obj[key] = prop.default || 0;
+            } else if (prop.type === 'boolean') {
+                obj[key] = prop.default || false;
+            }
+        }
+        return obj;
+    }
+
+    function createForms(apiData) {
+        const container = document.getElementById('apiContainer');
+        const paths = apiData.paths;
+        const schemas = apiData.components.schemas;
+
+        Object.entries(paths).forEach(([path, operations]) => {
+            Object.entries(operations).forEach(([method, info]) => {
+                const endpointDiv = document.createElement('div');
+                endpointDiv.className = 'endpoint';
+
+                const form = document.createElement('form');
+                form.method = method;
+                form.action = path;
+                form.onsubmit = function(event) {
+                    event.preventDefault();
+                    fetchData(this);
+                };
+
+                const title = document.createElement('h2');
+                title.textContent = `${info.summary} (${method.toUpperCase()})`;
+                form.appendChild(title);
+
+                if (info.requestBody && info.requestBody.content['application/json']) {
+                    const schemaRef = info.requestBody.content['application/json'].schema['$ref'];
+                    const schemaKey = schemaRef.replace('#/components/schemas/', '');
+                    const schema = schemas[schemaKey];
+                    const defaultValues = getDefaultValuesFromSchema(schema);
+
+                    const textarea = document.createElement('textarea');
+                    textarea.name = "body";
+                    textarea.rows = 10;
+                    textarea.textContent = JSON.stringify(defaultValues, null, 2);
+                    form.appendChild(textarea);
+                }
+
+                const submitButton = document.createElement('button');
+                submitButton.type = 'submit';
+                submitButton.textContent = 'Submit';
+                form.appendChild(submitButton);
+
+                endpointDiv.appendChild(form);
+                container.appendChild(endpointDiv);
+            });
+        });
+    }
+
+    function fetchData(form) {
+        const formData = new FormData(form);
+        fetch(form.action, {
+            method: form.method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: formData.get("body")
+        })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+});
+</script>
+</body>
+</html>
