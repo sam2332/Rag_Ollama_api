@@ -3,7 +3,6 @@ from contextlib import closing
 import os
 
 
-
 # Database connection utility
 def get_db_connection(embeddings_db_model):
     needs_setup = False
@@ -20,13 +19,15 @@ def get_db_connection(embeddings_db_model):
 def setup_database(embeddings_model_db):
     with get_db_connection(config) as conn:
         with closing(conn.cursor()) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS embeddings (
                     id INTEGER PRIMARY KEY,
                     source TEXT, 
                     content TEXT, 
                     embedding TEXT
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
-            """)
+            """
+            )
 
             conn.commit()

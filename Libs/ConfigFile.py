@@ -1,6 +1,7 @@
 import json
 import os
 
+
 # ConfigFile class
 class ConfigFile:
     def __init__(self, filename):

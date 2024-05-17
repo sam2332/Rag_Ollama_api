@@ -1,4 +1,6 @@
 from Libs.ConfigFile import ConfigFile
+
+
 def get_config():
     config = ConfigFile("config.json")
     if not config.load():
