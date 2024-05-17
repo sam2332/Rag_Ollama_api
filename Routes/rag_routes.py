@@ -2,37 +2,42 @@ from fastapi import HTTPException
 from numpy import array, argsort, fromstring
 from sklearn.metrics.pairwise import cosine_similarity
 from pydantic import BaseModel
-from Libs.Embeddings_helper import generate_embedding
+from Libs.EmbeddingsHelper import generate_embedding, gather_embeddings
 
 from Libs.RequestSchema import RagRequest
 from Libs.CONSTANTS import base_system_message
+
+import requests
 
 
 def register_routes(app):
     # Retrieval-Augmented Generation using embeddings
     @app.post("/api/rag_test")
     async def perform_ragtest(data: RagRequest):
-        related = gather_embeddings(data.embeddings_db, data.prompt, 3)
+        related = gather_embeddings(app, data.embeddings_db, data.prompt, 3)
         related_prompts = ""
         for i in related:
             related_prompts += f"""
-#{embeddings[i]['source']}
-```
-{embeddings[i]['content']}
-```"""
+#{i['source']}
+
+{i['content']}
+
+"""
         system_prompt = f"{base_system_message} \n{related_prompts}"
         return {"system_prompt": system_prompt, "related_prompts": related_prompts}
 
     @app.post("/api/rag")
     async def perform_rag(data: RagRequest):
         # Create a connection to the database
-        related = gather_embeddings(data.embeddings_db, data.prompt, 3)
+        related = gather_embeddings(app, data.embeddings_db, data.prompt, 3)
         related_prompts = ""
+        print(related)
         for i in related:
+            print(i.keys())
             related_prompts += f"""
-#{embeddings[i]['source']}
+#{i['source']}
 ```
-{embeddings[i]['content']}
+{i['content']}
 ```"""
         system_prompt = f"{base_system_message} \n{related_prompts}"
         print(system_prompt)
@@ -42,11 +47,12 @@ def register_routes(app):
             app.config.get("ollama_host") + "/api/chat",
             json={
                 "stream": False,
-                "model": app.config.get("chat_model"),
+                "model": data.model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": data.prompt},
                 ],
+                "options": {"temperature": data.temperature},
                 "max_tokens": data.max_tokens,
             },
         )

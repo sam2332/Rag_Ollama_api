@@ -3,26 +3,32 @@ from contextlib import closing
 from fastapi import HTTPException
 from Libs.DB import get_db_connection
 
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 def make_embeddings_safe_for_db(embedding):
     return str(embedding).replace("[", "{").replace("]", "}")
 
 
-def gather_embeddings(embeddings_db, prompt, related_count):
+def gather_embeddings(app, embeddings_db, prompt, related_count):
     with get_db_connection(embeddings_db) as conn:
         with closing(conn.cursor()) as cursor:
-            cursor.execute("SELECT content, embedding FROM embeddings")
+            cursor.execute("SELECT content,source, embedding FROM embeddings")
             embeddings = cursor.fetchall()
-            query_emb = generate_embedding(prompt)
+            if len(embeddings) == 0:
+                return []
+            query_emb = generate_embedding(app, prompt)
             db_embs = [
                 np.fromstring(row["embedding"][1:-1], sep=",") for row in embeddings
             ]
             cos_sims = cosine_similarity([query_emb], db_embs)[0]
             indices = np.argsort(cos_sims)[::-1][:related_count]
-            return indices
+            return [embeddings[i] for i in indices]
 
 
-def insert_embedding(embeddings_db, content, source, check_existing=True):
+def insert_embedding(app, embeddings_db, content, source, check_existing=True):
+    content = "".join(content).strip()
     print(
         f"Inserting into {embeddings_db} embedding for {len(content)} bytes from {source}"
     )
@@ -58,7 +64,7 @@ def insert_embedding(embeddings_db, content, source, check_existing=True):
         )
 
 
-def generate_embedding(prompt):
+def generate_embedding(app, prompt):
     response = requests.post(
         app.config.get("ollama_host") + "/api/embeddings",
         json={"model": app.config.get("embeddings_model"), "prompt": prompt},

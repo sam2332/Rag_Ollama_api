@@ -12,6 +12,9 @@ class EmbeddingRequest(BaseModel):
     check_existing: bool = True
     embeddings_db: str
 
+    class GetEmbeddingsRequest(BaseModel):
+        embeddings_db: str
+
 
 class ChatRequest(BaseModel):
     messages: list
@@ -19,9 +22,11 @@ class ChatRequest(BaseModel):
 
 class RagRequest(BaseModel):
     prompt: str
-    related_count: int
-    max_tokens: int
+    model: str
+    related_count: int = 15
+    max_tokens: int = 100
     embeddings_db: str
+    temperature: Optional[float] = 0.9
 
 
 class ChangeEmbeddingDBFilename(BaseModel):
@@ -43,6 +48,7 @@ class ChatPassthroughRequest(BaseModel):
     cache: str
     max_tokens: int
     temperature: Optional[float] = 0.0
+    return_json: Optional[bool] = False
 
 
 class ChatPassthroughRagRequest(BaseModel):
@@ -52,6 +58,10 @@ class ChatPassthroughRagRequest(BaseModel):
     max_tokens: int
     temperature: Optional[float] = 0.0
     related_count: int
+    embeddings_db: str
+
+
+class GetEmbeddingsRequest(BaseModel):
     embeddings_db: str
 
 
@@ -70,7 +80,6 @@ class IngressFastCSVEmbeddingsRequest(BaseModel):
 
 class EmbeddingUrlRequest(BaseModel):
     url: str
-    source: str
     check_existing: bool
     embeddings_db: str
     chunk_size: int = 255

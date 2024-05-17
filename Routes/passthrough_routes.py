@@ -31,7 +31,6 @@ def register_routes(app):
             "messages": [
                 {"role": msg.role, "content": msg.content} for msg in data.messages
             ],
-            "format": "json",
             "options": {
                 "temperature": data.temperature,
             },
@@ -39,6 +38,8 @@ def register_routes(app):
             "max_tokens": data.max_tokens,
             "keep_alive": "1m",
         }
+        if data.return_json:
+            payload["format"] = "json"
         logging.info(f"Sending chat request to {url} with payload: {payload}")
         # Send the request to the external chat API
         response = requests.post(url, json=payload)
@@ -62,72 +63,3 @@ def register_routes(app):
                 status_code=response.status_code,
                 detail="Error processing chat request with external model",
             )
-
-    @app.post("/api/passthrough/rag_chat")
-    async def rag_passthrough_chat(data: ChatPassthroughRagRequest):
-        data_hash = hash_ChatPassthroughRequest(data)
-        if pt_cache.get(data_hash):
-            return pt_cache.get(data_hash)
-        # Create a connection to the database
-        with get_db_connection(data.embeddings_model_db) as conn:
-            with closing(conn.cursor()) as cursor:
-                # Retrieve all embeddings from the database
-                cursor.execute(
-                    "SELECT source, content, embedding FROM embeddings where "
-                )
-                embeddings = cursor.fetchall()
-
-                # Generate the embedding for the prompt
-                query_emb = array([generate_embedding(data.prompt)])
-
-                # Convert stored embeddings from strings back to numpy arrays
-
-                db_embs = array(
-                    [fromstring(emb["embedding"][1:-1], sep=",") for emb in embeddings]
-                )
-
-                # Compute cosine similarities
-                cos_sims = cosine_similarity(query_emb, db_embs)[0]
-                indices = argsort(cos_sims)[::-1][
-                    : data.related_count
-                ]  # Top 3 related prompts
-
-                # Construct related prompts text
-                related_prompts = ""
-                # "\n".join(embeddings[i]['content'] for i in indices)
-                for i in indices:
-                    related_prompts += f"""
-    #{embeddings[i]['source']}
-    ```
-    {embeddings[i]['content']}
-    ```"""
-
-                system_prompt = f"{base_system_message} \n{related_prompts}\nThe next message is the users question"
-                print()
-
-                print(system_prompt)
-                print(data.prompt)
-
-                response = requests.post(
-                    app.config.get("ollama_host") + "/api/chat",
-                    json={
-                        "stream": False,
-                        "model": app.config.get("chat_model"),
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": data.prompt},
-                        ],
-                        "max_tokens": data.max_tokens,
-                    },
-                )
-                print(response.status_code)
-                print(response.text)
-                if response.status_code == 200:
-                    print(response.json())
-                    print()
-                    return response.json()
-                else:
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail="Error processing chat with model",
-                    )

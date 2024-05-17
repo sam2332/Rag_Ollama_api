@@ -3,37 +3,37 @@ from fastapi import HTTPException
 from Libs.DB import get_db_connection
 import threading as threadding
 from queue import Queue
+import requests
+import time
+from pathlib import Path
+import logging
+
 from Libs.RequestSchema import (
     ChangeEmbeddingDBFilename,
     EmbeddingRequest,
     IngressEmbeddingsRequest,
     IngressFastCSVEmbeddingsRequest,
     EmbeddingUrlRequest,
+    GetEmbeddingsRequest,
 )
-from Libs.Embeddings_helper import insert_embedding, make_embeddings_safe_for_db
+from Libs.EmbeddingsHelper import insert_embedding, make_embeddings_safe_for_db
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 def register_routes(app):
     @app.post("/api/reset_embeddings_db")
     async def reset_embeddings_db():
-        with get_db_connection() as conn:
+        with get_db_connection(data.embeddings_db) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("DELETE FROM embeddings")
                 conn.commit()
         return {"status": "success"}
 
-    @app.post("/api/change_embedding_db/")
-    async def change_embedding_db(data: ChangeEmbeddingDBFilename):
-        app.config.set("embeddings_db_model", data.name)
-        if not os.path.exists(f"./embeddings/{data.name}.db"):
-            setup_database()
-        app.config.save()
-        return {"status": "success"}
-
     # Endpoint to get all embeddings
     @app.get("/api/embeddings/")
-    async def get_embeddings():
-        with get_db_connection() as conn:
+    async def get_embeddings(data: GetEmbeddingsRequest):
+        with get_db_connection(data.embeddings_db) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("SELECT * FROM embeddings")
                 rows = cursor.fetchall()
@@ -46,8 +46,9 @@ def register_routes(app):
                 # chunk content 255 characters
                 for i in range(0, len(content), data.chunk_size):
                     insert_embedding(
+                        app,
                         embeddings_db,
-                        content[i : i + 255],
+                        content[i : i + data.chunk_size],
                         file.name + " - chunk " + str(i),
                     )
         elif file.suffix == ".csv":
@@ -68,7 +69,7 @@ def register_routes(app):
                 # add headers at top of content
                 content = " ".join(lines[0:2]) + "\n" + content
                 insert_embedding(
-                    embeddings_db, content, file.name + " - line " + str(index)
+                    app, embeddings_db, content, file.name + " - line " + str(index)
                 )
                 end = time.time()
                 avg_list.append(end - start)
@@ -104,7 +105,7 @@ def register_routes(app):
                 file, lines = queue.get()
                 content = "\n".join(lines)
                 try:
-                    insert_embedding(embeddings_db, content, file)
+                    insert_embedding(app, embeddings_db, content, file)
                 except Exception as e:
                     print(e)
                     failout -= 1
@@ -144,21 +145,21 @@ def register_routes(app):
     async def insert_text_embeddings(data: EmbeddingRequest):
         # Simulating external API call for embeddings
         return insert_embedding(
-            data.embeddings_db, data.content, data.source, data.check_existing
+            app, data.embeddings_db, data.content, data.source, data.check_existing
         )
 
     @app.post("/api/insert_url_embeddings/")
     async def insert_url_embeddings(data: EmbeddingUrlRequest):
-        response = requests.get(data.url, timeout=30)
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(data.url, timeout=5, headers=headers)
         if response.status_code == 200:
-            content = response.text
+            content = response.text.splitlines()
             for i in range(0, len(content), data.chunk_size):
                 insert_embedding(
-                    data.embeddings_db,
-                    content[i : i + 255],
-                    data.source + " - chunk " + str(i),
+                    app, data.embeddings_db, content[i : i + data.chunk_size], data.url
                 )
             return {"status": "success"}
+
         else:
             raise HTTPException(
                 status_code=response.status_code, detail="Error fetching URL"

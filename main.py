@@ -21,11 +21,9 @@ from Libs.Utility import digest_str_duration, hash_ChatPassthroughRequest
 from Libs.DB import setup_database
 from Libs.CONFIG import get_config
 
-from Libs.model_helper import check_model_exists, list_available_models
+from Libs.ModelHelper import check_model_exists, list_available_models
 
 config = get_config()
-setup_database(config)
-
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
@@ -57,18 +55,8 @@ from Routes.rag_routes import register_routes as register_rag_routes
 
 register_rag_routes(app)
 
-from Routes.model_routes import register_routes as register_model_routes
-
-register_model_routes(app)
-
-
 # serve index.html
 from fastapi.responses import FileResponse
-
-
-@app.get("/")
-async def get_index():
-    return FileResponse("index.html")
 
 
 # import all files in the "ingress" folder and mark the filenames as the source use the pathlib
