@@ -1,5 +1,6 @@
 import jsonpickle
 import os
+import time
 class FolderBasedCache():
     def __init__(self, folder):
         self.folder = folder
@@ -8,6 +9,7 @@ class FolderBasedCache():
         self.cache = {}
         self.cache_durations = {}
         self.load()
+    
     def load(self):
         if os.path.exists(f"{self.folder}/durations.json"):
             with open(f"{self.folder}/durations.json", "r") as f:
