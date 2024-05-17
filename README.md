@@ -1,9 +1,3 @@
-Deciding which workspace information to collect
-
-Collecting workspace information
-
-Filtering to most relevant information
-
 # Project Title
 
 This is a Python-based project that provides a FastAPI server with various routes and functionalities. It includes a caching system, database setup, and configuration management.

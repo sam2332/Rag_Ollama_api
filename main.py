@@ -45,9 +45,12 @@ register_passthrough_routes(app)
 from Routes.embeddings_routes import register_routes as register_embeddings_routes
 register_embeddings_routes(app)
 
-
 from Routes.rag_routes import register_routes as register_rag_routes
 register_rag_routes(app)
+
+from Routes.model_routes import register_routes as register_model_routes
+register_model_routes(app)
+
 
 
 #serve index.html
