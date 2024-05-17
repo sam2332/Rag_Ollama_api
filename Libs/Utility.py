@@ -39,6 +39,3 @@ def hash_anything(o):
 
 
 
-
-def make_embeddings_safe_for_db(embedding):
-    return str(embedding).replace('[', '{').replace(']', '}')

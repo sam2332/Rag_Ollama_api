@@ -3,9 +3,8 @@
 from contextlib import closing
 from fastapi import HTTPException
 from Libs.DB import get_db_connection
-from Libs.Utility import make_embeddings_safe_for_db
 from Libs.RequestSchema import ChangeEmbeddingDBFilename, EmbeddingRequest, IngressEmbeddingsRequest
-
+from Libsd.Embeddings_helper import insert_embedding, make_embeddings_safe_for_db
 
 def register_routes(app):
 
@@ -132,24 +131,8 @@ def register_routes(app):
 
 
         
-
-    def insert_embedding(content, source):
-        print(f"Inserting embedding for {len(content)} bytes from {source}")
-        response = requests.post(app.config.get('ollama_host')+"/api/embeddings", json={"model": app.config.get('embeddings_model'), "prompt": content})
-        if response.status_code == 200:
-            embedding = response.json()['embedding']
-            with get_db_connection() as conn:
-                with closing(conn.cursor()) as cursor:
-                    embedding = make_embeddings_safe_for_db(embedding)
-                    #check if exists
-                
-                    cursor.execute("INSERT INTO embeddings (source, content, embedding) VALUES (?, ?, ?)", (source, content, embedding))
-                    conn.commit()
-                    return {"status": "success", "content": content, "embedding": embedding}
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Error processing embeddings")
     # Endpoint to insert text and embeddings
     @app.post("/api/insert_text_embeddings/")
     async def insert_text_embeddings(data: EmbeddingRequest):
         # Simulating external API call for embeddings
-        return insert_embedding(data.content, data.source)
+        return insert_embedding(data.content, data.source,data.check_existing)

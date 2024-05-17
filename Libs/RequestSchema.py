@@ -10,6 +10,7 @@ class EmbeddingRequest(BaseModel):
     content: str
     overlap: int = 50
     chunk_size: int = 255
+    check_existing: bool = True
 
 
 
