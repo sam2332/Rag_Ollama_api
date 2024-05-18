@@ -7,6 +7,7 @@ import requests
 import time
 from pathlib import Path
 import logging
+from bs4 import BeautifulSoup
 
 from Libs.RequestSchema import (
     ChangeEmbeddingDBFilename,
@@ -16,7 +17,11 @@ from Libs.RequestSchema import (
     EmbeddingUrlRequest,
     GetEmbeddingsRequest,
 )
-from Libs.EmbeddingsHelper import insert_embedding, make_embeddings_safe_for_db
+from Libs.EmbeddingsHelper import (
+    insert_embedding,
+    make_embeddings_safe_for_db,
+    SoupToText,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -153,7 +158,9 @@ def register_routes(app):
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(data.url, timeout=5, headers=headers)
         if response.status_code == 200:
-            content = response.text.splitlines()
+            soup = BeautifulSoup(response.text, "html.parser")
+            content = SoupToText(soup)
+            content = content.splitlines()
             for i in range(0, len(content), data.chunk_size):
                 insert_embedding(
                     app, data.embeddings_db, content[i : i + data.chunk_size], data.url

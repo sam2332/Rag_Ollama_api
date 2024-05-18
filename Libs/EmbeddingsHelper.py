@@ -73,3 +73,57 @@ def generate_embedding(app, prompt):
         return response.json()["embedding"]
     else:
         raise Exception("Error generating embeddings")
+
+
+def compactText(text):
+    lines = text.splitlines()
+    lines = [line.rstrip() for line in lines]
+
+    # delete stripped empty lines
+    lines = [line for line in lines if line]
+
+    text = "\n".join(lines)
+
+    # compact multiple spaces into one
+    old = text
+    while True:
+        text = text.replace("  ", " ")
+        if old == text:
+            break
+        old = text
+    return text
+
+
+def SoupToText(soup):
+    # cleanup the soup
+
+    # kill all script and style elements
+    for script in soup(
+        [
+            "script",
+            "style",
+            "head",
+            "title",
+            "meta",
+            "[document]",
+            "noscript",
+            "svg",
+            "button",
+            "a",
+            "img",
+            "input",
+            "select",
+            "textarea",
+            "option",
+            "form",
+            "label",
+            "fieldset",
+            "legend",
+        ]
+    ):
+        script.extract()  # rip it out
+
+    # get text
+    text = compactText(soup.get_text())
+
+    return text
