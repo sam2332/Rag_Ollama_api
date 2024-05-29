@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def register_routes(app):
-    @app.post("/api/reset_embeddings_db")
+    @app.post("/api/embeddings/reset_embeddings_db")
     async def reset_embeddings_db():
         with get_db_connection(data.embeddings_db) as conn:
             with closing(conn.cursor()) as cursor:
@@ -84,7 +84,7 @@ def register_routes(app):
                 )
                 avg_list = avg_list[-10:]
 
-    @app.post("/api/ingress_file_embeddings/")
+    @app.post("/api/embeddings/ingress_file_embeddings/")
     async def ingress_file_embeddings(data: IngressEmbeddingsRequest):
         # Get all files in the ingress folder
         ingress_folder = Path("ingress")
@@ -116,7 +116,7 @@ def register_routes(app):
                     failout -= 1
             failout - 1
 
-    @app.post("/api/fast_csv_ingress/")
+    @app.post("/api/embeddings/fast_csv_ingress/")
     async def fast_csv_ingress(data: IngressFastCSVEmbeddingsRequest):
         queue = Queue()
         for file in Path("ingress").glob("*.csv"):
@@ -146,28 +146,9 @@ def register_routes(app):
         return {"status": "success"}
 
     # Endpoint to insert text and embeddings
-    @app.post("/api/insert_text_embeddings/")
+    @app.post("/api/embeddings/insert_text_embeddings/")
     async def insert_text_embeddings(data: EmbeddingRequest):
         # Simulating external API call for embeddings
         return insert_embedding(
             app, data.embeddings_db, data.content, data.source, data.check_existing
         )
-
-    @app.post("/api/insert_url_embeddings/")
-    async def insert_url_embeddings(data: EmbeddingUrlRequest):
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(data.url, timeout=5, headers=headers)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, "html.parser")
-            content = SoupToText(soup)
-            content = content.splitlines()
-            for i in range(0, len(content), data.chunk_size):
-                insert_embedding(
-                    app, data.embeddings_db, content[i : i + data.chunk_size], data.url
-                )
-            return {"status": "success"}
-
-        else:
-            raise HTTPException(
-                status_code=response.status_code, detail="Error fetching URL"
-            )

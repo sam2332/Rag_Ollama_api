@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 # API models
 class EmbeddingRequest(BaseModel):
-    db: str
     source: str
     content: str
     overlap: int = 50
@@ -12,8 +11,9 @@ class EmbeddingRequest(BaseModel):
     check_existing: bool = True
     embeddings_db: str
 
-    class GetEmbeddingsRequest(BaseModel):
-        embeddings_db: str
+
+class GetEmbeddingsRequest(BaseModel):
+    embeddings_db: str
 
 
 class ChatRequest(BaseModel):
