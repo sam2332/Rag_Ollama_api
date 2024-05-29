@@ -19,7 +19,7 @@
             "tasks": ["item_title1", "item_title2"...],
             "frustration_reasons": ["reason_title1", "reason_title2"...]
             "ticket_complete": Boolean,
-            "reasons_incomplete": ['reason1','reason2'...]
+            "reasons_incomplete": ["reason1","reason2"...]
         }
         Make sure to only output the JSON object and nothing else.
     `;

@@ -55,6 +55,10 @@ from Routes.rag_routes import register_routes as register_rag_routes
 
 register_rag_routes(app)
 
+from Routes.functional_routes import register_routes as register_functional_routes
+
+register_functional_routes(app)
+
 # serve index.html
 from fastapi.responses import FileResponse
 
