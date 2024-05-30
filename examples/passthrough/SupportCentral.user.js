@@ -12,7 +12,8 @@
 (function() {
     'use strict';
 
-    const model = 'dolphin-mistral:latest';
+    const model = 'dolphin-mistral:v2.8';
+    //const model = 'dolphin-mistral:latest';
     const now = new Date();
     const date = now.toLocaleDateString();
     const hours = now.getHours();
@@ -42,7 +43,7 @@ Todays Date/Time: ${formattedDateTime}
                     ],
                     temperature: temperature,
                     max_tokens: max_tokens,
-                    return_json: true
+                    return_json
                 })
             });
             const data = await response.json();
