@@ -26,9 +26,9 @@ class FolderBasedCache:
     def save(self):
         for key in self.cache:
             with open(f"{self.folder}/{key}", "w") as f:
-                f.write(jsonpickle.encode(self.cache[key]))
+                f.write(jsonpickle.encode(self.cache[key], indent=4))
         with open(f"{self.folder}/durations.json", "w") as f:
-            f.write(jsonpickle.encode(self.cache_durations))
+            f.write(jsonpickle.encode(self.cache_durations, indent=4))
 
     def get(self, key):
         self.cleanup()

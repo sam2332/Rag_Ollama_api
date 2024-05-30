@@ -1,3 +1,10 @@
+import dotenv
+import sys
+from pathlib import Path
+
+sys.path.insert(0, Path(".").absolute())
+dotenv.load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import requests
@@ -9,7 +16,6 @@ import numpy as np
 import os
 import logging
 
-from Libs.ConfigFile import ConfigFile
 from Libs.RequestSchema import (
     EmbeddingRequest,
     RagRequest,
@@ -19,15 +25,12 @@ from Libs.RequestSchema import (
 from Libs.FolderBasedCache import FolderBasedCache
 from Libs.Utility import digest_str_duration, hash_ChatPassthroughRequest
 from Libs.DB import setup_database
-from Libs.CONFIG import get_config
 
 from Libs.ModelHelper import check_model_exists, list_available_models
 
-config = get_config()
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
-app.config = config
 
 
 # add cors

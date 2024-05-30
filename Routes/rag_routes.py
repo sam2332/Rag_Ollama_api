@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from numpy import array, argsort, fromstring
 from sklearn.metrics.pairwise import cosine_similarity
 from pydantic import BaseModel
-from Libs.EmbeddingsHelper import generate_embedding, gather_embeddings
+from Libs.EmbeddingsHelper import gather_embeddings
 
 from Libs.RequestSchema import RagRequest
 from Libs.CONSTANTS import base_system_message
@@ -44,7 +44,7 @@ def register_routes(app):
         print(data.prompt)
         # Query an external chat model
         response = requests.post(
-            app.config.get("ollama_host") + "/api/chat",
+            os.environ.get("ollama_host") + "/api/chat",
             json={
                 "stream": False,
                 "model": data.model,

@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         SupportCentral_TicketReview
+// @name         Gpt_Local_TicketReview
 // @namespace    http://tampermonkey.net/
 // @version      2024-05-09
 // @description  Try to take over the world!
@@ -11,17 +11,18 @@
 
 (function() {
     'use strict';
- 
+
     const model = 'dolphin-mistral:latest';
+    const now = new Date();
+    const date = now.toLocaleDateString();
+    const hours = now.getHours();
+    const formattedDateTime = `${date} ${hours}:00`;
+
     const review_systemMessage = `
-        Rate the technician and provide as many tasks as you can, and a complete list of frustrating items in the following format:
-        {
-            "tasks": ["item_title1", "item_title2"...],
-            "frustration_reasons": ["reason_title1", "reason_title2"...]
-            "ticket_complete": Boolean,
-            "reasons_incomplete": ["reason1","reason2"...]
-        }
-        Make sure to only output the JSON object and nothing else.
+Todays Date/Time: ${formattedDateTime}
+        Summarize the ticket in the following format:
+ { "tasks": ["item_title1", "item_title2","many more"], "frustration_reasons": ["reason_title1", "reason_title2","many more"], "ticket_complete": Boolean,"reasons_incomplete": ["reason1","reason2","many more"]}
+    Vaild Json Only
     `;
 
     async function LLM(prompt, systemMessage, temperature, max_tokens, model) {
@@ -40,7 +41,8 @@
                         { role: 'user', content: prompt }
                     ],
                     temperature: temperature,
-                    max_tokens: max_tokens
+                    max_tokens: max_tokens,
+                    return_json: true
                 })
             });
             const data = await response.json();

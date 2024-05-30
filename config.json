@@ -1,5 +1,0 @@
-{
-    "chat_model": "llama3:latest",
-    "embeddings_model": "mxbai-embed-large",
-    "ollama_host": "http://localhost:11434"
-}
