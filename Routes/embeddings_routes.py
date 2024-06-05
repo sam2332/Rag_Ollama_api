@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 import logging
 from bs4 import BeautifulSoup
-
+import os
 from Libs.RequestSchema import (
     ChangeEmbeddingDBFilename,
     EmbeddingRequest,
@@ -16,6 +16,8 @@ from Libs.RequestSchema import (
     IngressFastCSVEmbeddingsRequest,
     EmbeddingUrlRequest,
     GetEmbeddingsRequest,
+    ResetEmbeddingsRequest,
+    BatchEmbeddingRequest,
 )
 from Libs.EmbeddingsHelper import (
     insert_embedding,
@@ -28,11 +30,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 def register_routes(app):
     @app.post("/api/embeddings/reset_embeddings_db")
-    async def reset_embeddings_db():
+    async def reset_embeddings_db(data: ResetEmbeddingsRequest):
         with get_db_connection(data.embeddings_db) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("DELETE FROM embeddings")
                 conn.commit()
+        os.unlink(os.path.join("embeddings", data.embeddings_db + ".db"))
         return {"status": "success"}
 
     # Endpoint to get all embeddings
@@ -149,6 +152,50 @@ def register_routes(app):
     @app.post("/api/embeddings/insert_text_embeddings/")
     async def insert_text_embeddings(data: EmbeddingRequest):
         # Simulating external API call for embeddings
-        return insert_embedding(
-            app, data.embeddings_db, data.content, data.source, data.check_existing
-        )
+        chunk_size = data.chunk_size
+        overlap = data.overlap
+        content = data.content
+        if len(content) < data.chunk_size:
+            insert_embedding(
+                app,
+                embedding.embeddings_db,
+                content,
+                embedding.source,
+                embedding.check_existing,
+            )
+        else:
+            for i in range(0, len(content), chunk_size - overlap):
+                chunk = content[i : i + chunk_size]
+                insert_embedding(
+                    app,
+                    data.embeddings_db,
+                    chunk,
+                    data.source,
+                    data.check_existing,
+                )
+
+    # Endpoint to insert text and embeddings
+    @app.post("/api/embeddings/batch_insert_text_embeddings/")
+    async def insert_text_embeddings_list(data: BatchEmbeddingRequest):
+        for embedding in data.embeddings:
+            chunk_size = embedding.chunk_size
+            overlap = embedding.overlap
+            content = embedding.content
+            if len(content) < chunk_size:
+                insert_embedding(
+                    app,
+                    embedding.embeddings_db,
+                    content,
+                    embedding.source,
+                    embedding.check_existing,
+                )
+            else:
+                for i in range(0, len(content), chunk_size - overlap):
+                    chunk = content[i : i + chunk_size]
+                    insert_embedding(
+                        app,
+                        embedding.embeddings_db,
+                        chunk,
+                        embedding.source,
+                        embedding.check_existing,
+                    )

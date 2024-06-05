@@ -13,30 +13,42 @@ def make_embeddings_safe_for_db(embedding):
     return str(embedding).replace("[", "{").replace("]", "}")
 
 
+from contextlib import closing
+from fastapi import HTTPException
+
+from numpy import array, argsort, fromstring
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+
 def gather_embeddings(app, embeddings_db, prompt, related_count):
     with get_db_connection(embeddings_db) as conn:
         with closing(conn.cursor()) as cursor:
-            cursor.execute("SELECT content,source, embedding FROM embeddings")
+            cursor.execute("SELECT content, source, embedding FROM embeddings")
             embeddings = cursor.fetchall()
             if len(embeddings) == 0:
                 return []
+
+            # Generate the embedding for the prompt
             query_emb = Ollama.get_embedding(prompt)
-            db_embs = [
-                np.fromstring(row["embedding"][1:-1], sep=",") for row in embeddings
-            ]
+            print(query_emb)
+            # Convert stored embeddings from strings back to numpy arrays
+            db_embs = [np.fromstring(emb[2][1:-1], sep=",") for emb in embeddings]
+
+            # Compute cosine similarities
             cos_sims = cosine_similarity([query_emb], db_embs)[0]
-            indices = np.argsort(cos_sims)[::-1][:related_count]
+            indices = argsort(cos_sims)[::-1][
+                :related_count
+            ]  # Top 'related_count' related prompts
             return [embeddings[i] for i in indices]
 
 
 def insert_embedding(app, embeddings_db, content, source, check_existing=True):
     content = "".join(content).strip()
-    print(
-        f"Inserting into {embeddings_db} embedding for {len(content)} bytes from {source}"
-    )
+    print(f"Inserting into {embeddings_db} embedding for {content} bytes from {source}")
     with get_db_connection(embeddings_db) as conn:
         with closing(conn.cursor()) as cursor:
-            embedding = Ollama.get_embedding(content)
+            embedding = make_embeddings_safe_for_db(Ollama.get_embedding(content))
             if check_existing:
                 cursor.execute(
                     "SELECT * FROM embeddings WHERE source = ? AND content = ?",
@@ -48,6 +60,7 @@ def insert_embedding(app, embeddings_db, content, source, check_existing=True):
                         "content": content,
                         "embedding": embedding,
                     }
+            print((source, content, embedding))
             cursor.execute(
                 "INSERT INTO embeddings (source, content, embedding) VALUES (?, ?, ?)",
                 (source, content, embedding),

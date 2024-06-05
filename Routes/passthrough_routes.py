@@ -7,7 +7,6 @@ from Libs.DB import get_db_connection
 from Libs.Utility import digest_str_duration
 from Libs.FolderBasedCache import FolderBasedCache
 from Libs.RequestSchema import ChatPassthroughRequest, ChatPassthroughRagRequest
-from Libs.Utility import hash_ChatPassthroughRequest
 
 import requests
 

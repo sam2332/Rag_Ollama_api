@@ -1,3 +1,4 @@
+import os
 from fastapi import HTTPException
 from numpy import array, argsort, fromstring
 from sklearn.metrics.pairwise import cosine_similarity
@@ -28,18 +29,25 @@ def register_routes(app):
 
     @app.post("/api/rag")
     async def perform_rag(data: RagRequest):
+        if data.system_message is not None:
+            system_message = data.system_message
+        else:
+            system_message = base_system_message
         # Create a connection to the database
-        related = gather_embeddings(app, data.embeddings_db, data.prompt, 3)
+
+        related = gather_embeddings(
+            app, data.embeddings_db, data.prompt, data.related_count
+        )
         related_prompts = ""
         print(related)
+        old_source = None
         for i in related:
-            print(i.keys())
-            related_prompts += f"""
-#{i['source']}
-```
-{i['content']}
-```"""
-        system_prompt = f"{base_system_message} \n{related_prompts}"
+            if i["source"] != old_source:
+                related_prompts += f"\n# {i['source']}\n"
+                old_source = i["source"]
+            related_prompts += f"{i['content']}\n"
+
+        system_prompt = f"{system_message} \n{related_prompts}"
         print(system_prompt)
         print(data.prompt)
         # Query an external chat model

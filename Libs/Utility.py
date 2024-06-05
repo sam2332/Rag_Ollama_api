@@ -16,22 +16,6 @@ import json
 import hashlib
 
 
-def hash_ChatPassthroughRequest(data: ChatPassthroughRequest):
-    data = json.dumps(
-        {
-            "model": data.model,
-            "messages": [
-                {"role": msg.role, "content": msg.content} for msg in data.messages
-            ],
-            "options": {
-                "temperature": data.temperature,
-            },
-        }
-    )
-    # md5
-    return hashlib.md5(data.encode()).hexdigest()
-
-
 import jsonpickle
 
 

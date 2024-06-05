@@ -12,6 +12,10 @@ class EmbeddingRequest(BaseModel):
     embeddings_db: str
 
 
+class ResetEmbeddingsRequest(BaseModel):
+    embeddings_db: str
+
+
 class GetEmbeddingsRequest(BaseModel):
     embeddings_db: str
 
@@ -20,8 +24,14 @@ class ChatRequest(BaseModel):
     messages: list
 
 
+class BatchEmbeddingRequest(BaseModel):
+    embeddings: List[EmbeddingRequest]
+
+
 class RagRequest(BaseModel):
     prompt: str
+    # optional system_message
+    system_message: Optional[str] = None
     model: str
     related_count: int = 15
     max_tokens: int = 100

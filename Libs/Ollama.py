@@ -12,7 +12,16 @@ pt_cache = FolderBasedCache("pt_cache")
 
 
 def chat_query(messages, model, cache, max_tokens, temperature, return_json):
-    data_hash = hash_anything(messages)
+    data_hash = hash_anything(
+        {
+            "messages": messages,
+            "model": model,
+            "cache": cache,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "return_json": return_json,
+        }
+    )
     if pt_cache.get(data_hash):
         return pt_cache.get(data_hash)
     # Create the URL for the chat API endpoint

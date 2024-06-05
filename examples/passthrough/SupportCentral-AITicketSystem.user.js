@@ -1,19 +1,16 @@
 // ==UserScript==
-// @name         Gpt_Local_TicketReview
+// @name         Support Central AI Ticket System
 // @namespace    http://tampermonkey.net/
 // @version      2024-05-09
 // @description  Try to take over the world!
 // @author       You
 // @match        https://*/SupportCentral/HelpdeskTickets/Details/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=ingham.org
 // @grant        none
 // ==/UserScript==
 
 (function() {
     'use strict';
-
-    const model = 'dolphin-mistral:v2.8';
-    //const model = 'dolphin-mistral:latest';
+    const model = 'dolphin-mistral:latest';
     const now = new Date();
     const date = now.toLocaleDateString();
     const hours = now.getHours();
@@ -23,7 +20,7 @@
 Todays Date/Time: ${formattedDateTime}
         Summarize the ticket in the following format:
  { "tasks": ["item_title1", "item_title2","many more"], "frustration_reasons": ["reason_title1", "reason_title2","many more"], "ticket_complete": Boolean,"reasons_incomplete": ["reason1","reason2","many more"]}
-    Vaild Json Only
+    Vaild Json Only, dont say the default format elements
     `;
 
     async function LLM(prompt, systemMessage, temperature, max_tokens, model) {
@@ -43,7 +40,7 @@ Todays Date/Time: ${formattedDateTime}
                     ],
                     temperature: temperature,
                     max_tokens: max_tokens,
-                    return_json
+                    return_json: true
                 })
             });
             const data = await response.json();
@@ -58,15 +55,63 @@ Todays Date/Time: ${formattedDateTime}
             // reraise the error
         }
     }
+    function generateEmbeddingItem(ticketId, section, content) {
+        return {
+            source: section,
+            content: content,
+            overlap: 50,
+            chunk_size: 1024,
+            check_existing: true,
+            embeddings_db: "TicketEmbeddings_" + ticketId
+        };
+    }
+
+    async function batchInsert(collection) {
+        const url = "http://localhost:11435/api/embeddings/batch_insert_text_embeddings";
+        const headers = {
+            "Content-Type": "application/json"
+        };
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({ embeddings: collection })
+        });
+
+        return response;
+    }
 
     function gatherAndCompactContentByClassName(selector) {
         const content = document.getElementsByClassName(selector);
         let output = "";
+    
         for (let i = 0; i < content.length; i++) {
             if (content[i].classList.contains("comment-input")) {
                 continue;
             }
-            output += compactText(content[i].textContent) + "\n\n\n";
+    
+            // Create a deep clone of the element
+            const clone = content[i].cloneNode(true);
+    
+            // Remove all links within the cloned element
+            const links = clone.getElementsByTagName('a');
+            while (links.length > 0) {
+                links[0].parentNode.removeChild(links[0]);
+            }
+    
+            output += compactText(clone.textContent) + "\n\n\n";
+        }
+    
+        return output;
+    }
+    function gatherComments(){
+        const comments = document.getElementsByClassName('comment');
+        let output = [];
+        for (let i = 0; i < comments.length; i++) {
+            if (comments[i].classList.contains("comment-input")) {
+                continue;
+            }
+            output.push(compactText(comments[i].textContent))
         }
         return output;
     }
@@ -82,13 +127,44 @@ Todays Date/Time: ${formattedDateTime}
     function tailText(text, length) {
         return text.slice(-length);
     }
-
-    async function initiateChatWithSystemMessage() {
+    async function resetEmbeddingsDb(ticketId) {
+        const url = "http://localhost:11435/api/embeddings/reset_embeddings_db";
+        const headers = {
+            "Content-Type": "application/json"
+        };
+    
+        const response = await fetch(url, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({
+                embeddings_db: "TicketEmbeddings_" + ticketId
+            })
+        });
+    
+        return response;
+    }
+    
+    // Call the function with a ticket ID of 1
+    async function initiateSystem() {
         try {
-            const gathered_ticket_information = gatherAndCompactContentByClassName('comment-description') +
-                                                 tailText(gatherAndCompactContentByClassName('comment'), 1024);
+            const gathered_ticket_information = gatherAndCompactContentByClassName('comment-description')
+            const gathered_ticket_comments =gatherAndCompactContentByClassName('comment')
+            const ticket_id = document.location.href.split('/')[6].split('?')[0];
 
-            const data = await LLM(gathered_ticket_information, review_systemMessage, 0.5, 4000, model);
+            await resetEmbeddingsDb(ticket_id);
+            const embeddingCollection = [];
+            embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_body", gathered_ticket_information));
+            
+            gatherComments().forEach((comment, index) => {
+                embeddingCollection.push(generateEmbeddingItem(ticket_id, "comment "+ index.toString(), comment));
+            });
+
+
+            const ticket_info = document.getElementsByClassName('ticket-info')[0].textContent;
+            embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_info", ticket_info));
+            await batchInsert(embeddingCollection);
+
+            const data = await LLM(gathered_ticket_information+"\n"+gathered_ticket_comments, review_systemMessage, 0.97, 24000, model);
             if (!data || !data.message || !data.message.content) {
                 $('#ai_output').html("AI Offline")
                 console.log(data)
@@ -136,5 +212,5 @@ Todays Date/Time: ${formattedDateTime}
         </div>
     `);
 
-    initiateChatWithSystemMessage();
+    initiateSystem();
 })();
