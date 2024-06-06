@@ -16,3 +16,10 @@ def list_available_models():
     if response.status_code == 200:
         return response.json()["models"]
     return []
+
+
+def pull_model(model_name):
+    response = requests.post(
+        "http://localhost:11434/api/pull", json={"model": model_name}
+    )
+    return response.status_code == 200

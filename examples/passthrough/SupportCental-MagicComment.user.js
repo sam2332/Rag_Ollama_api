@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Boss 4 - MessageBox GPT
 // @version      0.2
-// @author       Lily Rudloff, Gpt-4
+// @author       Lily Rudloff
 // @match        https://*/SupportCentral/HelpdeskTickets/Details/*
 // @grant        none
 // ==/UserScript==
 
 const model = 'dolphin-mistral:latest';
 var myInfoContext = {
-    "My Name": "Samuel Rudloff",
+    "My Name": "Lily Rudloff",
     "My Job Title":"Application Programmer",
     "My Manager":"Deb Fett"
 };
@@ -193,7 +193,8 @@ setTimeout(function() {
 3. You will correct any conduct issues in the supplied text, please reword it in your own words.
 4. Please try and write professionally but do not be formal.
 5. Your message should be concise, don't share all the info you know.
-
+6. Only mention my boss if the ticket is High Priority or if they are mentioned in the ticket.
+7: dont ask for personal information, only use the information provided in the ticket.
 Context:
 You are addressing:
 ${JSON.stringify(extractRequesterDetails())}

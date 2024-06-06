@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Support Central AI Ticket System
+// @name         Boss 4 - AI Ticket System
 // @namespace    http://tampermonkey.net/
 // @version      2024-05-09
 // @description  Try to take over the world!
@@ -117,11 +117,15 @@ Todays Date/Time: ${formattedDateTime}
     }
 
     function compactText(content) {
-        return content.replace(/\n{3,}/g, '\n\n')
-                      .replace(/[ \t]+(\n)/g, '$1')
-                      .replace(/(\n)[ \t]+/g, '$1')
-                      .replace(/[ \t]{2,}/g, ' ')
-                      .trim();
+        return content
+            .split('\n')                           // Split content into lines
+            .map(line => line.trim())              // Trim each line
+            .join('\n')                            // Join lines back with a single newline
+            .replace(/\n{3,}/g, '\n\n')            // Replace three or more newlines with two newlines
+            .replace(/[ \t]+(\n)/g, '$1')          // Remove spaces or tabs before a newline
+            .replace(/(\n)[ \t]+/g, '$1')          // Remove spaces or tabs after a newline
+            .replace(/[ \t]{2,}/g, ' ')            // Replace multiple spaces or tabs with a single space
+            .trim();                               // Remove leading and trailing whitespace from the entire text
     }
 
     function tailText(text, length) {
@@ -153,15 +157,14 @@ Todays Date/Time: ${formattedDateTime}
 
             await resetEmbeddingsDb(ticket_id);
             const embeddingCollection = [];
-            embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_body", gathered_ticket_information));
+            embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_body", compactText(gathered_ticket_information)));
             
             gatherComments().forEach((comment, index) => {
-                embeddingCollection.push(generateEmbeddingItem(ticket_id, "comment "+ index.toString(), comment));
+                embeddingCollection.push(generateEmbeddingItem(ticket_id, "comment "+ index.toString(), compactText(comment)));
             });
 
 
-            const ticket_info = document.getElementsByClassName('ticket-info')[0].textContent;
-            embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_info", ticket_info));
+            embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_info", compactText(document.getElementsByClassName('ticket-info')[0].textContent)));
             await batchInsert(embeddingCollection);
 
             const data = await LLM(gathered_ticket_information+"\n"+gathered_ticket_comments, review_systemMessage, 0.97, 24000, model);

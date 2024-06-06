@@ -6,3 +6,4 @@ pt_cache
 htmlcov
 coverage.xml
 .coverage
+*_spy

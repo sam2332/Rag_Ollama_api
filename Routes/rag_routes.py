@@ -39,7 +39,6 @@ def register_routes(app):
             app, data.embeddings_db, data.prompt, data.related_count
         )
         related_prompts = ""
-        print(related)
         old_source = None
         for i in related:
             if i["source"] != old_source:
@@ -48,6 +47,17 @@ def register_routes(app):
             related_prompts += f"{i['content']}\n"
 
         system_prompt = f"{system_message} \n{related_prompts}"
+
+        data_spy(
+            {
+                "system_prompt": system_prompt,
+                "prompt": data.prompt,
+                "model": data.model,
+                "temperature": data.temperature,
+                "max_tokens": data.max_tokens,
+            },
+            "rag_spy",
+        )
         print(system_prompt)
         print(data.prompt)
         # Query an external chat model
