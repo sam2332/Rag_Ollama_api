@@ -13,7 +13,7 @@ import requests
 
 def register_routes(app):
     # Retrieval-Augmented Generation using embeddings
-    @app.post("/api/rag_test")
+    @app.post("/api/rag_test", tags=["rag"])
     async def perform_ragtest(data: RagRequest):
         related = gather_embeddings(app, data.embeddings_db, data.prompt, 3)
         related_prompts = ""
@@ -27,7 +27,7 @@ def register_routes(app):
         system_prompt = f"{base_system_message} \n{related_prompts}"
         return {"system_prompt": system_prompt, "related_prompts": related_prompts}
 
-    @app.post("/api/rag")
+    @app.post("/api/rag", tags=["rag"])
     async def perform_rag(data: RagRequest):
         if data.system_message is not None:
             system_message = data.system_message
