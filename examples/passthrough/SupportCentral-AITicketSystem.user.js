@@ -14,10 +14,10 @@
     const now = new Date();
     const date = now.toLocaleDateString();
     const hours = now.getHours();
-    const formattedDateTime = `${date} ${hours}:00`;
+    const formattedDateTime = `${date}`;
 
     const review_systemMessage = `
-Todays Date/Time: ${formattedDateTime}
+Todays Date: ${formattedDateTime}
         Summarize the ticket in the following format:
  { "tasks": ["item_title1", "item_title2","many more"], "frustration_reasons": ["reason_title1", "reason_title2","many more"], "ticket_complete": Boolean,"reasons_incomplete": ["reason1","reason2","many more"]}
     Vaild Json Only, dont say the default format elements
@@ -84,24 +84,17 @@ Todays Date/Time: ${formattedDateTime}
     function gatherAndCompactContentByClassName(selector) {
         const content = document.getElementsByClassName(selector);
         let output = "";
-    
+
         for (let i = 0; i < content.length; i++) {
             if (content[i].classList.contains("comment-input")) {
                 continue;
             }
-    
-            // Create a deep clone of the element
-            const clone = content[i].cloneNode(true);
-    
-            // Remove all links within the cloned element
-            const links = clone.getElementsByTagName('a');
-            while (links.length > 0) {
-                links[0].parentNode.removeChild(links[0]);
-            }
-    
-            output += compactText(clone.textContent) + "\n\n\n";
+
+
+
+            output += compactText(content[i].textContent) + "\n\n\n";
         }
-    
+
         return output;
     }
     function gatherComments(){
@@ -136,7 +129,7 @@ Todays Date/Time: ${formattedDateTime}
         const headers = {
             "Content-Type": "application/json"
         };
-    
+
         const response = await fetch(url, {
             method: "POST",
             headers: headers,
@@ -144,21 +137,21 @@ Todays Date/Time: ${formattedDateTime}
                 embeddings_db: "TicketEmbeddings_" + ticketId
             })
         });
-    
+
         return response;
     }
-    
+
     // Call the function with a ticket ID of 1
     async function initiateSystem() {
         try {
             const gathered_ticket_information = gatherAndCompactContentByClassName('comment-description')
-            const gathered_ticket_comments =gatherAndCompactContentByClassName('comment')
+            const gathered_ticket_comments =tailText(gatherAndCompactContentByClassName('comment'),2048)
             const ticket_id = document.location.href.split('/')[6].split('?')[0];
 
             await resetEmbeddingsDb(ticket_id);
             const embeddingCollection = [];
             embeddingCollection.push(generateEmbeddingItem(ticket_id, "ticket_body", compactText(gathered_ticket_information)));
-            
+
             gatherComments().forEach((comment, index) => {
                 embeddingCollection.push(generateEmbeddingItem(ticket_id, "comment "+ index.toString(), compactText(comment)));
             });

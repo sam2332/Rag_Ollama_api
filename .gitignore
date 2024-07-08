@@ -7,3 +7,5 @@ htmlcov
 coverage.xml
 .coverage
 *_spy
+kv_stores/*
+lists/*

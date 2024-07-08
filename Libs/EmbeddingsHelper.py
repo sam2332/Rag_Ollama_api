@@ -2,7 +2,7 @@ import os
 import requests
 from contextlib import closing
 from fastapi import HTTPException
-from Libs.DB import get_db_connection
+from Libs.DB import get_embeddings_db_connection
 from Libs.Utility import data_spy
 
 import numpy as np
@@ -23,7 +23,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def gather_embeddings(app, embeddings_db, prompt, related_count):
-    with get_db_connection(embeddings_db) as conn:
+    with get_embeddings_db_connection(embeddings_db) as conn:
         with closing(conn.cursor()) as cursor:
             cursor.execute("SELECT content, source, embedding FROM embeddings")
             embeddings = cursor.fetchall()
@@ -50,7 +50,7 @@ def insert_embedding(app, embeddings_db, content, source, check_existing=True):
     print(
         f"Inserting into {embeddings_db} embedding for {len(content)} bytes from {source}"
     )
-    with get_db_connection(embeddings_db) as conn:
+    with get_embeddings_db_connection(embeddings_db) as conn:
         with closing(conn.cursor()) as cursor:
             embedding = make_embeddings_safe_for_db(Ollama.get_embedding(content))
             if check_existing:

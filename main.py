@@ -23,12 +23,13 @@ from Libs.RequestSchema import (
     ChatPassthroughRequest,
 )
 from Libs.FolderBasedCache import FolderBasedCache
-from Libs.DB import setup_database
+from Libs.DB import setup_embeddings_database
 
 from Libs.ModelHelper import check_model_exists, list_available_models
 
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 app = FastAPI()
 
 
@@ -40,26 +41,29 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 
+import importlib
+import os
 
 # cache class where items expire after a certain seconds, there are get/set/save/restore/cleanup methods clean should be called on get  and save on set, use jsonpickle
+defined_functions = {}
+for file in os.listdir("Routes"):
+    if file.endswith(".py"):
+        try:
+            module_filename = file.replace(".py", "")
+            logger.info(f"Importing module {module_filename}")
+            module = importlib.import_module(f"Routes.{module_filename}")
+            module.register_routes(app)
 
+            defined_functions[module_filename] = module
+            logger.info(f"Imported module {module_filename}")
 
-from Routes.passthrough_routes import register_routes as register_passthrough_routes
+        except Exception as e:
+            logger.error(f"Error importing module {module_filename}: {e}")
+            # traceback to logger
+            import traceback
 
-register_passthrough_routes(app)
+            logger.error(traceback.format_exc())
 
-
-from Routes.embeddings_routes import register_routes as register_embeddings_routes
-
-register_embeddings_routes(app)
-
-from Routes.rag_routes import register_routes as register_rag_routes
-
-register_rag_routes(app)
-
-from Routes.functional_routes import register_routes as register_functional_routes
-
-register_functional_routes(app)
 
 # serve index.html
 from fastapi.responses import FileResponse

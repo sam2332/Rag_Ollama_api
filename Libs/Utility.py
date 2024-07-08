@@ -27,17 +27,18 @@ def hash_anything(o):
 import jsonpickle
 import os
 import requests
+from collections import defaultdict
 
 # function to cache data in incrementing files
-cache_first_run = True
+cache_first_run = defaultdict(lambda: True)
 
 
 def data_spy(data, cache_dir):
     if not os.path.exists(cache_dir):
         return
     global cache_first_run
-    if cache_first_run:
-        cache_first_run = False
+    if cache_first_run[cache_dir]:
+        cache_first_run[cache_dir] = False
         for file in os.listdir(cache_dir):
             os.remove(f"{cache_dir}/{file}")
     cache_file = f"{cache_dir}/{len(os.listdir(cache_dir))}.txt"

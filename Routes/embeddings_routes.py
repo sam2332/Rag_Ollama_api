@@ -1,6 +1,6 @@
 from contextlib import closing
 from fastapi import HTTPException
-from Libs.DB import get_db_connection
+from Libs.DB import get_embeddings_db_connection
 import threading as threadding
 from queue import Queue
 import requests
@@ -29,9 +29,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def register_routes(app):
-    @app.post("/api/embeddings/reset_embeddings_db")
+    @app.post("/api/embeddings/reset_embeddings_db", tags=["embeddings"])
     async def reset_embeddings_db(data: ResetEmbeddingsRequest):
-        with get_db_connection(data.embeddings_db) as conn:
+        with get_embeddings_db_connection(data.embeddings_db) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("DELETE FROM embeddings")
                 conn.commit()
@@ -39,9 +39,9 @@ def register_routes(app):
         return {"status": "success"}
 
     # Endpoint to get all embeddings
-    @app.get("/api/embeddings/")
+    @app.get("/api/embeddings/", tags=["embeddings"])
     async def get_embeddings(data: GetEmbeddingsRequest):
-        with get_db_connection(data.embeddings_db) as conn:
+        with get_embeddings_db_connection(data.embeddings_db) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("SELECT * FROM embeddings")
                 rows = cursor.fetchall()
@@ -87,7 +87,7 @@ def register_routes(app):
                 )
                 avg_list = avg_list[-10:]
 
-    @app.post("/api/embeddings/ingress_file_embeddings/")
+    @app.post("/api/embeddings/ingress_file_embeddings/", tags=["embeddings"])
     async def ingress_file_embeddings(data: IngressEmbeddingsRequest):
         # Get all files in the ingress folder
         ingress_folder = Path("ingress")
@@ -119,7 +119,7 @@ def register_routes(app):
                     failout -= 1
             failout - 1
 
-    @app.post("/api/embeddings/fast_csv_ingress/")
+    @app.post("/api/embeddings/fast_csv_ingress/", tags=["embeddings"])
     async def fast_csv_ingress(data: IngressFastCSVEmbeddingsRequest):
         queue = Queue()
         for file in Path("ingress").glob("*.csv"):
@@ -149,7 +149,7 @@ def register_routes(app):
         return {"status": "success"}
 
     # Endpoint to insert text and embeddings
-    @app.post("/api/embeddings/insert_text_embeddings/")
+    @app.post("/api/embeddings/insert_text_embeddings/", tags=["embeddings"])
     async def insert_text_embeddings(data: EmbeddingRequest):
         # Simulating external API call for embeddings
         chunk_size = data.chunk_size
@@ -175,7 +175,7 @@ def register_routes(app):
                 )
 
     # Endpoint to insert text and embeddings
-    @app.post("/api/embeddings/batch_insert_text_embeddings/")
+    @app.post("/api/embeddings/batch_insert_text_embeddings/", tags=["embeddings"])
     async def insert_text_embeddings_list(data: BatchEmbeddingRequest):
         for embedding in data.embeddings:
             chunk_size = embedding.chunk_size
