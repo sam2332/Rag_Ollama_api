@@ -9,16 +9,23 @@ from pathlib import Path
 import logging
 from bs4 import BeautifulSoup
 import os
-from Libs.RequestSchema import (
-    ChangeEmbeddingDBFilename,
-    EmbeddingRequest,
-    IngressEmbeddingsRequest,
+from Libs.RequestSchema.BatchEmbeddingRequest import BatchEmbeddingRequest
+from Libs.RequestSchema.ChangeEmbeddingDBFilename import ChangeEmbeddingDBFilename
+from Libs.RequestSchema.ChangeEmbeddingModel import ChangeEmbeddingModel
+from Libs.RequestSchema.ChatPassthroughRagRequest import ChatPassthroughRagRequest
+from Libs.RequestSchema.ChatPassthroughRequest import ChatPassthroughRequest
+from Libs.RequestSchema.ChatRequest import ChatRequest
+from Libs.RequestSchema.EmbeddingRequest import EmbeddingRequest
+from Libs.RequestSchema.EmbeddingUrlRequest import EmbeddingUrlRequest
+from Libs.RequestSchema.GetEmbeddingsRequest import GetEmbeddingsRequest
+from Libs.RequestSchema.IngressEmbeddingsRequest import IngressEmbeddingsRequest
+from Libs.RequestSchema.IngressFastCSVEmbeddingsRequest import (
     IngressFastCSVEmbeddingsRequest,
-    EmbeddingUrlRequest,
-    GetEmbeddingsRequest,
-    ResetEmbeddingsRequest,
-    BatchEmbeddingRequest,
 )
+from Libs.RequestSchema.Message import Message
+from Libs.RequestSchema.RagRequest import RagRequest
+from Libs.RequestSchema.ResetEmbeddingsRequest import ResetEmbeddingsRequest
+
 from Libs.EmbeddingsHelper import (
     insert_embedding,
     make_embeddings_safe_for_db,

@@ -11,7 +11,7 @@ from Libs.FolderBasedCache import FolderBasedCache
 pt_cache = FolderBasedCache("pt_cache")
 
 
-def chat_query(messages, model, cache, max_tokens, temperature, return_json):
+def chat_query(messages, model, cache, max_tokens, temperature, top_p, return_json):
     data_hash = hash_anything(
         {
             "messages": messages,
@@ -19,6 +19,7 @@ def chat_query(messages, model, cache, max_tokens, temperature, return_json):
             "cache": cache,
             "max_tokens": max_tokens,
             "temperature": temperature,
+            "top_p": top_p,
             "return_json": return_json,
         }
     )
@@ -30,9 +31,7 @@ def chat_query(messages, model, cache, max_tokens, temperature, return_json):
     payload = {
         "model": model,
         "messages": messages,
-        "options": {
-            "temperature": temperature,
-        },
+        "options": {"temperature": temperature, "top_p": top_p},
         "stream": False,
         "max_tokens": max_tokens,
         "keep_alive": "1m",
