@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from pydantic import BaseModel
 from Libs.EmbeddingsHelper import gather_embeddings
 
-from Libs.RequestSchema.RagRequest import RagRequest
+from RequestSchema.RagRequest import RagRequest
 
 from Libs.CONSTANTS import base_system_message
 

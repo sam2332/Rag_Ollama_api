@@ -6,8 +6,8 @@ from fastapi import HTTPException
 from Libs.DB import get_embeddings_db_connection
 from Libs.Utility import digest_str_duration, data_spy
 from Libs.FolderBasedCache import FolderBasedCache
-from Libs.RequestSchema.ChatPassthroughRequest import ChatPassthroughRequest
-from Libs.RequestSchema.ChatPassthroughRagRequest import ChatPassthroughRagRequest
+from RequestSchema.ChatPassthroughRequest import ChatPassthroughRequest
+from RequestSchema.ChatPassthroughRagRequest import ChatPassthroughRagRequest
 
 import requests
 

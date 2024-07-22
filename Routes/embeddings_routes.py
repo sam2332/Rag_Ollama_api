@@ -9,22 +9,22 @@ from pathlib import Path
 import logging
 from bs4 import BeautifulSoup
 import os
-from Libs.RequestSchema.BatchEmbeddingRequest import BatchEmbeddingRequest
-from Libs.RequestSchema.ChangeEmbeddingDBFilename import ChangeEmbeddingDBFilename
-from Libs.RequestSchema.ChangeEmbeddingModel import ChangeEmbeddingModel
-from Libs.RequestSchema.ChatPassthroughRagRequest import ChatPassthroughRagRequest
-from Libs.RequestSchema.ChatPassthroughRequest import ChatPassthroughRequest
-from Libs.RequestSchema.ChatRequest import ChatRequest
-from Libs.RequestSchema.EmbeddingRequest import EmbeddingRequest
-from Libs.RequestSchema.EmbeddingUrlRequest import EmbeddingUrlRequest
-from Libs.RequestSchema.GetEmbeddingsRequest import GetEmbeddingsRequest
-from Libs.RequestSchema.IngressEmbeddingsRequest import IngressEmbeddingsRequest
-from Libs.RequestSchema.IngressFastCSVEmbeddingsRequest import (
+from RequestSchema.BatchEmbeddingRequest import BatchEmbeddingRequest
+from RequestSchema.ChangeEmbeddingDBFilename import ChangeEmbeddingDBFilename
+from RequestSchema.ChangeEmbeddingModel import ChangeEmbeddingModel
+from RequestSchema.ChatPassthroughRagRequest import ChatPassthroughRagRequest
+from RequestSchema.ChatPassthroughRequest import ChatPassthroughRequest
+from RequestSchema.ChatRequest import ChatRequest
+from RequestSchema.EmbeddingRequest import EmbeddingRequest
+from RequestSchema.EmbeddingUrlRequest import EmbeddingUrlRequest
+from RequestSchema.GetEmbeddingsRequest import GetEmbeddingsRequest
+from RequestSchema.IngressEmbeddingsRequest import IngressEmbeddingsRequest
+from RequestSchema.IngressFastCSVEmbeddingsRequest import (
     IngressFastCSVEmbeddingsRequest,
 )
-from Libs.RequestSchema.Message import Message
-from Libs.RequestSchema.RagRequest import RagRequest
-from Libs.RequestSchema.ResetEmbeddingsRequest import ResetEmbeddingsRequest
+from RequestSchema.Message import Message
+from RequestSchema.RagRequest import RagRequest
+from RequestSchema.ResetEmbeddingsRequest import ResetEmbeddingsRequest
 
 from Libs.EmbeddingsHelper import (
     insert_embedding,

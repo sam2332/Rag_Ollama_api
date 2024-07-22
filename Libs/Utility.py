@@ -11,7 +11,7 @@ def digest_str_duration(s):
     return 0
 
 
-from Libs.RequestSchema import ChatPassthroughRequest
+from RequestSchema import ChatPassthroughRequest
 import json
 import hashlib
 

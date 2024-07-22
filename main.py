@@ -16,12 +16,11 @@ import numpy as np
 import os
 import logging
 
-from Libs.RequestSchema import (
-    EmbeddingRequest,
-    RagRequest,
-    ChangeEmbeddingDBFilename,
-    ChatPassthroughRequest,
-)
+from RequestSchema.EmbeddingRequest import EmbeddingRequest
+from RequestSchema.RagRequest import RagRequest
+from RequestSchema.ChangeEmbeddingDBFilename import ChangeEmbeddingDBFilename
+from RequestSchema.ChatPassthroughRequest import ChatPassthroughRequest
+
 from Libs.FolderBasedCache import FolderBasedCache
 from Libs.DB import setup_embeddings_database
 
