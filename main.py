@@ -44,7 +44,7 @@ sys.excepthook = handle_exception
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # Setup handlers
 stream_handler = logging.StreamHandler()
@@ -64,8 +64,10 @@ logger.addHandler(file_handler)
 
 logger.info("Logging setup is complete.")
 
-app = FastAPI()
 
+# system exceptions
+app = FastAPI()
+app.logger = logger
 
 # add cors
 
