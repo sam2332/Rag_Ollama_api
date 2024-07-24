@@ -5,6 +5,16 @@ from pathlib import Path
 sys.path.insert(0, Path(".").absolute())
 dotenv.load_dotenv()
 
+# patch for langchain on linux
+platform = sys.platform
+if platform == "linux" or platform == "linux2":
+    import pathlib
+
+    temp = pathlib.PosixPath
+    pathlib.PosixPath.startswith = lambda self, x: self.as_posix().startswith(x)
+    pathlib.PosixPath.rstrip = lambda self, x: self.as_posix().rstrip(x)
+    pathlib.PosixPath.lstrip = lambda self, x: self.as_posix().lstrip(x)
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import requests
