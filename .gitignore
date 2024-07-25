@@ -12,3 +12,4 @@ lists/*
 app.log*
 vector_documents/*
 Jail_FS/*
+examples/passthrough/jail/*

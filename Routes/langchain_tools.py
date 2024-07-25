@@ -140,7 +140,7 @@ def run_python_file(file_name):
 
 
 llm = ChatOllama(
-    model=os.environ.get("tool_model"),
+    model=os.environ.get("langchain_tool_model"),
     temperature=0.3,
     num_ctx=4096,
 )
