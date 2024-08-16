@@ -59,8 +59,8 @@ def register_routes(app):
             },
             "rag_spy",
         )
-        print(system_prompt)
-        print(data.prompt)
+        logger.info(system_prompt)
+        logger.info(data.prompt)
         # Query an external chat model
         response = requests.post(
             os.environ.get("ollama_host") + "/api/chat",
@@ -75,11 +75,10 @@ def register_routes(app):
                 "max_tokens": data.max_tokens,
             },
         )
-        print(response.status_code)
-        print(response.text)
+        logger.info(response.status_code)
+        logger.info(response.text)
         if response.status_code == 200:
-            print(response.json())
-            print()
+            logger.info(response.json())
             return response.json()
         else:
             raise HTTPException(

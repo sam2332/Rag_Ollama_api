@@ -3,7 +3,7 @@ import logging
 import requests
 from fastapi import HTTPException
 
-logging.basicConfig(level=logging.INFO)
+import ollama
 from Libs.Utility import digest_str_duration, hash_anything
 from Libs.FolderBasedCache import FolderBasedCache
 
@@ -63,14 +63,5 @@ def chat_query(messages, model, cache, max_tokens, temperature, top_p, return_js
 
 
 def get_embedding(content):
-    response = requests.post(
-        os.environ.get("ollama_host") + "/api/embeddings",
-        json={"model": os.environ.get("embeddings_model"), "prompt": content},
-    )
-    if response.status_code == 200:
-        embedding = response.json()["embedding"]
-        return embedding
-    else:
-        raise HTTPException(
-            status_code=response.status_code, detail="Error processing embeddings"
-        )
+    embedding = ollama.embeddings(prompt=content, model="mxbai-embed-large")
+    return embedding["embedding"]

@@ -9,6 +9,9 @@ from pathlib import Path
 import logging
 from bs4 import BeautifulSoup
 import os
+
+import numpy as np
+from RequestSchema.EmbeddingSearchRequest import EmbeddingSearchRequest
 from RequestSchema.BatchEmbeddingRequest import BatchEmbeddingRequest
 from RequestSchema.ChangeEmbeddingDBFilename import ChangeEmbeddingDBFilename
 from RequestSchema.ChangeEmbeddingModel import ChangeEmbeddingModel
@@ -26,13 +29,14 @@ from RequestSchema.Message import Message
 from RequestSchema.RagRequest import RagRequest
 from RequestSchema.ResetEmbeddingsRequest import ResetEmbeddingsRequest
 
+# cosine similarity
+from sklearn.metrics.pairwise import cosine_similarity
 from Libs.EmbeddingsHelper import (
     insert_embedding,
     make_embeddings_safe_for_db,
     SoupToText,
 )
-
-logging.basicConfig(level=logging.DEBUG)
+import Libs.Ollama as Ollama
 
 
 def register_routes(app):
@@ -89,7 +93,7 @@ def register_routes(app):
                 end = time.time()
                 avg_list.append(end - start)
                 avg = sum(avg_list) / len(avg_list)
-                print(
+                app.logger.info(
                     f"Average time: {avg} seconds, time remaining for {len(lines)-index} lines: {avg*(len(lines)-index)} seconds"
                 )
                 avg_list = avg_list[-10:]
@@ -122,7 +126,7 @@ def register_routes(app):
                 try:
                     insert_embedding(app, embeddings_db, content, file)
                 except Exception as e:
-                    print(e)
+                    app.logger.error(e)
                     failout -= 1
             failout - 1
 
@@ -165,10 +169,10 @@ def register_routes(app):
         if len(content) < data.chunk_size:
             insert_embedding(
                 app,
-                embedding.embeddings_db,
+                data.embeddings_db,
                 content,
-                embedding.source,
-                embedding.check_existing,
+                data.source,
+                data.check_existing,
             )
         else:
             for i in range(0, len(content), chunk_size - overlap):
@@ -206,3 +210,55 @@ def register_routes(app):
                         embedding.source,
                         embedding.check_existing,
                     )
+
+    @app.post("/api/embeddings/search_embeddings/", tags=["embeddings"])
+    async def search_embeddings(data: EmbeddingSearchRequest):
+        try:
+            with get_embeddings_db_connection(data.embeddings_db) as conn:
+                with closing(conn.cursor()) as cursor:
+                    cursor.execute("SELECT * FROM embeddings")
+                    rows = cursor.fetchall()
+                    embeddings = [dict(row) for row in rows]
+
+                    if data.query:
+                        queries = [data.query]
+                    else:
+                        queries = data.queries
+
+                    if not queries:
+                        raise HTTPException(
+                            status_code=400, detail="No query or queries provided."
+                        )
+
+                    query_embs = [Ollama.get_embedding(content) for content in queries]
+                    db_embs = [
+                        np.fromstring(row["embedding"][1:-1], sep=",")
+                        for row in embeddings
+                    ]
+
+                    related = []
+                    for query_emb in query_embs:
+                        cos_sims = cosine_similarity([query_emb], db_embs)[0]
+
+                        # Adjust max_related to be within bounds
+                        max_related = min(data.max_related, len(cos_sims))
+
+                        # Use np.argpartition to find the top N indices efficiently
+                        top_n_indices = np.argpartition(-cos_sims, max_related)[
+                            :max_related
+                        ]
+                        top_n_indices = top_n_indices[
+                            np.argsort(-cos_sims[top_n_indices])
+                        ]
+
+                        for i in top_n_indices:
+                            if cos_sims[i] <= data.minimal_similarity:
+                                break  # Stop if the similarity is below the minimal threshold
+
+                            related.append(embeddings[i])
+
+                    return related
+
+        except Exception as e:
+            app.logger.error(e)
+            raise HTTPException(status_code=500, detail=str(e))

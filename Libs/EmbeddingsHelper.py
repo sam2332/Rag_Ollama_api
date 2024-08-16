@@ -32,7 +32,7 @@ def gather_embeddings(app, embeddings_db, prompt, related_count):
 
             # Generate the embedding for the prompt
             query_emb = Ollama.get_embedding(prompt)
-            print(query_emb)
+            app.logger.debug(query_emb)
             # Convert stored embeddings from strings back to numpy arrays
             db_embs = [np.fromstring(emb[2][1:-1], sep=",") for emb in embeddings]
 
@@ -47,7 +47,7 @@ def gather_embeddings(app, embeddings_db, prompt, related_count):
 def insert_embedding(app, embeddings_db, content, source, check_existing=True):
     content = "".join(content).strip()
     data_spy(content, "embeddings_spy")
-    print(
+    app.logger.info(
         f"Inserting into {embeddings_db} embedding for {len(content)} bytes from {source}"
     )
     with get_embeddings_db_connection(embeddings_db) as conn:
