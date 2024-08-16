@@ -14,7 +14,7 @@ from langchain_chroma import Chroma
 import shutil
 
 
-def get_base_folder_hash():
+def get_base_folder_hash(base_dir):
     out = {}
     for root, dirs, files in os.walk(base_dir):
         for file in files:
@@ -42,7 +42,7 @@ def register_routes(app):
         model=os.environ["langchain_vector_embeddings_model"]
     )
     old_base_folder_hash = kvstore.get("base_folder_hash")
-    base_folder_hash = get_base_folder_hash()
+    base_folder_hash = get_base_folder_hash(base_dir)
     if base_folder_hash is None or old_base_folder_hash != base_folder_hash:
         kvstore.set("base_folder_hash", base_folder_hash)
         if os.path.exists("./chroma_db"):
