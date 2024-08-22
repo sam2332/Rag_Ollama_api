@@ -108,8 +108,14 @@ function setupFormEvents(){
 
         var requestor = document.querySelector("div.ticket-requester.mb-20").querySelector('a').textContent
         var title = document.querySelector("div.comment-description > div.text > p.title").textContent
-        insertNote(requestor, note);
-        insertNote(title, note);
+        requestor = clean_string(requestor);
+        title = clean_string(title);
+        // Example usage
+        var queries = [requestor, title, extractSubject(),extractWeirdSubject()];
+        queries = deduplicate_queries(queries)
+        for (let i = 0; i < queries.length; i++) {
+            insertNote(queries[i], note);
+        }
     });
 
 }
@@ -275,10 +281,18 @@ function transformEmbeddingsToContentGroups(embeddings){
 function transformEmbeddingsToRowItem(embedding){
     //info icon with hover of list of all related sources, next to content
     var sources = embedding.source.join("\n")
-    return `<tr><td>${embedding.content} <span title="${sources}" data-tooltip="" title="" data-placement="top">🛈</span></td></tr>`
+    return `<tr><td>${convert_content_to_html(embedding.content)} <span title="${sources}" data-tooltip="" title="" data-placement="top">🛈</span></td></tr>`
 }
 
+function convert_content_to_html(text){
+    var urlRegex = /(https?:\/\/[^\s]+)/g;
 
+    text = text.replace(urlRegex, function(url) {
+        return '<a target="_blank" href="' + url + '">' + url + '</a>';
+    })
+
+    return text;
+}
 
 
 
@@ -300,7 +314,7 @@ function transformEmbeddingsToRowItem(embedding){
 
 
                 document.querySelector("#magicnotes_loading_id").remove();
-                let output = "<div><strong>Queryies:</strong>";
+                let output = "<div><strong>Queries:</strong>";
                 output += "<ul>";
                 queries.forEach(query => {
                     output += `<li>${query}</li>`;
