@@ -113,18 +113,160 @@ function setupFormEvents(){
     });
 
 }
+function extractSubject() {
+    var des_lines = document.querySelector('.desc').textContent.split('\n');
+    let subject = null;
+    des_lines.forEach(line => {
+        if (line.includes("Subject:")) {
+            line = line.replace("::", ":");
+            subject = line.split(":")[1].trim();
+        }
+    });
+    return clean_string(subject);
+}
+function clean_string(subject){
+    if (subject == null){
+        return ""
+    }
+    //remove all punctuation
+    subject = subject.replace("-", " ");
+    subject = subject.replace(":", " ");
+    subject = subject.replace(";", " ");
+    subject = subject.replace(",", " ");
+    subject = subject.replace(".", " ");
+    subject = subject.replace("!", " ");
+    subject = subject.replace("?", " ");
+    subject = subject.replace("(", " ");
+    subject = subject.replace(")", " ");
+    subject = subject.replace("[", " ");
+    subject = subject.replace("]", " ");
+    subject = subject.replace("{", " ");
+    subject = subject.replace("}", " ");
+    subject = subject.replace("'", " ");
+    subject = subject.replace('"', " ");
+    subject = subject.replace("`", " ");
+    subject = subject.replace("~", " ");
+    subject = subject.replace("$", " ");
+    subject = subject.replace("%", " ");
+    subject = subject.replace("^", " ");
+    subject = subject.replace("*", " ");
+    subject = subject.replace("=", " ");
+
+    subject = subject.replace("  ", " ");
+    
+    subject = subject.trim();
+
+    subject = subject.toLowerCase();
 
 
+    return subject;
+}
 
+function deduplicate_queries(queries){
+    var uniqueQueries = []
+    queries.forEach(query => {
+        if (query != null && !uniqueQueries.includes(query)){
+            uniqueQueries.push(query)
 
+        }
+        // case insensitive
+        else if (query != null && !uniqueQueries.includes(query.toLowerCase())){
+            uniqueQueries.push(query.toLowerCase())
+        }
+    });
+    //remove empty strings
+    
+    return uniqueQueries
+}
+
+function extractWeirdSubject() {
+    // Extract the text content from the element with the class 'desc'
+    var desLines = document.querySelector('.desc').textContent.split('\n');
+
+    // Loop through each line of the description
+    for (let line of desLines) {
+        line = line.replace("::", ":");
+        // Check if the line contains "Subject:"
+        if (line.includes("Subject:")) {
+            // Extract and clean the subject text
+            let subject = line.split(":")[1].trim();
+            // Return the important phrases from the subject
+            return extractImportantPhrases(subject);
+        }
+    }
+    // Return null if "Subject:" is not found
+    return null;
+}
+
+function extractImportantPhrases(subject) {
+    // List of key phrases to look for
+    let importantPhrases = [
+        // Content & Updates
+        "post",
+        "upload",
+        "publish",
+        "update",
+        "migrate",
+        "repair",
+        "fix",
+        "issue",
+        "problem",
+        "error",
+        "fail",
+        "failed",
+    
+        // Reports & Analytics
+        "report",
+        "spreadsheet",
+        "analytics",
+        "data",
+        "results",
+    
+        // Communication & Email
+        "email",
+        "notification",
+        "alert",
+        "message",
+        "reminder",
+        "seamless docs",
+    
+        // Billing & Finance
+        "billing",
+        "invoice",
+        "payment",
+        "charge",
+        "refund",
+    
+        // Website & Sharepoint
+        "website",
+        "html",
+        "sharepoint",
+        "portal",
+        "webpage",
+        "site"
+    ];
+
+    // Convert the subject to lowercase and split into words
+    let words = subject.toLowerCase().split(/\s+/);
+
+    // Filter the important phrases that match words in the subject
+    let matchedPhrases = importantPhrases.filter(phrase => 
+        phrase.split(' ').every(word => words.includes(word))
+    );
+
+    // Join the matched phrases into a single string and return
+    return matchedPhrases.join(' ');
+}
 
 function transformEmbeddingsToContentGroups(embeddings){
     var existing_contents = {}
     for (let i = 0; i < embeddings.length; i++) {
         if (existing_contents.hasOwnProperty(embeddings[i].content)){
-            existing_contents[embeddings[i].content].push(embeddings[i].source)
+            existing_contents[embeddings[i].content].push(embeddings[i].source + " S:"+embeddings[i].query_similarity
+            )
         }else{
-            existing_contents[embeddings[i].content] = [embeddings[i].source]
+            existing_contents[embeddings[i].content] = [embeddings[i].source + " S:"+embeddings[i].query_similarity
+        ]
         }
     }
     return existing_contents
@@ -132,7 +274,7 @@ function transformEmbeddingsToContentGroups(embeddings){
 
 function transformEmbeddingsToRowItem(embedding){
     //info icon with hover of list of all related sources, next to content
-    var sources = embedding.source.join("\n ")
+    var sources = embedding.source.join("\n")
     return `<tr><td>${embedding.content} <span title="${sources}" data-tooltip="" title="" data-placement="top">🛈</span></td></tr>`
 }
 
@@ -145,11 +287,12 @@ function transformEmbeddingsToRowItem(embedding){
         try {
             var requestor = document.querySelector("div.ticket-requester.mb-20").querySelector('a').textContent
             var title = document.querySelector("div.comment-description > div.text > p.title").textContent
-            var query_requestor = requestor
-            var query_title = title
+            requestor = clean_string(requestor);
+            title = clean_string(title);
             // Example usage
-            var queries = [query_requestor, query_title];
-            fetchEmbeddingsSearch(queries, 100, 0.2)
+            var queries = [requestor, title, extractSubject(),extractWeirdSubject()];
+            queries = deduplicate_queries(queries)
+            fetchEmbeddingsSearch(queries, 100, 0.6)
             .then(relatedEmbeddings => {
                 console.log('Related Embeddings:', relatedEmbeddings);
 
@@ -158,8 +301,10 @@ function transformEmbeddingsToRowItem(embedding){
 
                 document.querySelector("#magicnotes_loading_id").remove();
                 let output = "<div><strong>Queryies:</strong>";
-                output += `<p>${query_requestor}</p>`;
-                output += `<p>${query_title}</p>`;
+                output += "<ul>";
+                queries.forEach(query => {
+                    output += `<li>${query}</li>`;
+                });
                 output += "</div>";
                 output += `<table width="100%" id='magic_notes_table'>`;
                 output += `<thead><tr><th>AI Notes</th></tr></thead>`;

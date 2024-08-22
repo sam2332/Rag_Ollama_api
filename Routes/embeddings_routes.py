@@ -225,6 +225,8 @@ def register_routes(app):
                     else:
                         queries = data.queries
 
+                    app.logger.info(f"Queries: {queries}")
+
                     if not queries:
                         raise HTTPException(
                             status_code=400, detail="No query or queries provided."
@@ -237,26 +239,33 @@ def register_routes(app):
                     ]
 
                     related = []
-                    for query_emb in query_embs:
+                    for index, query_emb in enumerate(query_embs):
+                        app.logger.info(f"Query: {queries[index]}")
                         cos_sims = cosine_similarity([query_emb], db_embs)[0]
 
                         # Adjust max_related to be within bounds
-                        max_related = min(data.max_related, len(cos_sims))
+                        max_related = min(data.max_related, len(cos_sims) - 1)
+                        app.logger.info(f"Max related: {max_related}")
 
                         # Use np.argpartition to find the top N indices efficiently
                         top_n_indices = np.argpartition(-cos_sims, max_related)[
                             :max_related
                         ]
+                        app.logger.info(f"Top N indices: {top_n_indices}")
                         top_n_indices = top_n_indices[
                             np.argsort(-cos_sims[top_n_indices])
                         ]
+                        app.logger.info(f"Top N indices sorted: {top_n_indices}")
 
                         for i in top_n_indices:
                             if cos_sims[i] <= data.minimal_similarity:
                                 break  # Stop if the similarity is below the minimal threshold
 
+                            embeddings[i]["query_similarity"] = cos_sims[i]
+                            embeddings[i]["query"] = queries[index]
                             related.append(embeddings[i])
 
+                    app.logger.info(f"Related: {related}")
                     return related
 
         except Exception as e:
